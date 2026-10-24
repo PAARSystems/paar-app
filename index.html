@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>PAAR Systems</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="description" content="PAAR Systems — staffing, timesheets, salaries and invoices">
+<meta name="theme-color" content="#5935DF">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" type="image/png" sizes="48x48" href="icons/favicon-48.png">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="PAAR">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<style>
+  html, body { margin: 0; height: 100%; background: #f5f5f5; overflow: hidden;
+    font: 15px/1.5 -apple-system, "Segoe UI", Roboto, Arial, sans-serif; color: #1d1b2f; }
+  #app { position: fixed; inset: 0; width: 100%; height: 100%; border: 0;
+    padding-top: env(safe-area-inset-top); box-sizing: border-box; background: #fff;
+    opacity: 0; transition: opacity .25s; }
+  #app.ready { opacity: 1; }
+  .screen { position: fixed; inset: 0; display: flex; flex-direction: column; align-items: center;
+    justify-content: center; text-align: center; padding: 24px; box-sizing: border-box; background: #f5f5f5; }
+  .screen img { width: 220px; max-width: 70vw; }
+  .bar { width: 160px; height: 4px; border-radius: 4px; background: #e4ddfb; overflow: hidden; margin-top: 22px; }
+  .bar i { display: block; width: 40%; height: 100%; background: #5935DF; border-radius: 4px;
+    animation: slide 1.1s ease-in-out infinite; }
+  @keyframes slide { 0% { transform: translateX(-100%); } 100% { transform: translateX(260%); } }
+  .note { color: #6b6880; font-size: 13px; margin-top: 18px; max-width: 420px; }
+  .note a, .card a { color: #5935DF; font-weight: 600; }
+  .card { background: #fff; border: 1px solid #e4ddfb; border-radius: 14px; padding: 22px 24px;
+    max-width: 460px; text-align: left; margin-top: 18px; }
+  .card h2 { margin: 0 0 8px; font-size: 18px; color: #5935DF; }
+  .card code { background: #f4f1fe; padding: 2px 6px; border-radius: 6px; font-size: 13px; word-break: break-all; }
+  .btn { display: inline-block; margin-top: 14px; padding: 10px 18px; border-radius: 10px; border: 0;
+    background: #5935DF; color: #fff; font: 600 14px/1 inherit; cursor: pointer; text-decoration: none; }
+  [hidden] { display: none !important; }
+</style>
+</head>
+<body>
+
+<!-- loading splash -->
+<div class="screen" id="splash">
+  <img src="icons/logo.jpg" alt="PAAR Systems">
+  <div class="bar"><i></i></div>
+  <div class="note" id="slow" hidden>Taking a while… <a id="direct" href="#" target="_blank" rel="noopener">open the tool directly</a></div>
+</div>
+
+<!-- shown when config.js still has the placeholder -->
+<div class="screen" id="setup" hidden>
+  <img src="icons/logo.jpg" alt="PAAR Systems">
+  <div class="card">
+    <h2>One step left</h2>
+    Open <code>config.js</code> and paste your Apps Script web-app link (the one ending in
+    <code>/exec</code>) between the quotes, then upload the folder again.
+  </div>
+</div>
+
+<!-- shown when there is no internet -->
+<div class="screen" id="offline" hidden>
+  <img src="icons/logo.jpg" alt="PAAR Systems">
+  <div class="card">
+    <h2>You're offline</h2>
+    The PAAR tool keeps its data in Google, so it needs an internet connection.
+    <br><button class="btn" onclick="location.reload()">Try again</button>
+  </div>
+</div>
+
+<iframe id="app" title="PAAR Systems" allow="clipboard-read; clipboard-write" referrerpolicy="no-referrer-when-downgrade" hidden></iframe>
+
+<script src="config.js"></script>
+<script>
+(function () {
+  var url = String(window.PAAR_APP_URL || '').trim();
+  var show = function (id) {
+    ['splash', 'setup', 'offline'].forEach(function (s) { document.getElementById(s).hidden = s !== id; });
+  };
+
+  if (!/^https:\/\/script\.google(usercontent)?\.com\/.+/.test(url)) { show('setup'); return; }
+  if (navigator.onLine === false) { show('offline'); return; }
+
+  document.getElementById('direct').href = url;
+  var frame = document.getElementById('app');
+  frame.hidden = false;
+  frame.addEventListener('load', function () {
+    frame.classList.add('ready');
+    setTimeout(function () { document.getElementById('splash').hidden = true; }, 250);
+  });
+  frame.src = url;
+  setTimeout(function () {
+    if (!frame.classList.contains('ready')) document.getElementById('slow').hidden = false;
+  }, 12000);
+
+  window.addEventListener('offline', function () { if (!frame.classList.contains('ready')) show('offline'); });
+
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', function () { navigator.serviceWorker.register('sw.js').catch(function () {}); });
+  }
+})();
+</script>
+</body>
+</html>
